@@ -6,16 +6,14 @@ bool PackFile::packFile(const std::string &filePath, const std::string packFileP
     std::tm now_tm = *std::localtime(&nowTime_t);
 
     std::ostringstream oss;
-    oss << std::put_time(&now_tm, "%Y-%m-%d %H:%M:%S");
+    oss << std::put_time(&now_tm, "%Y-%m-%d_%H:%M:%S");
     std::string timeStr = oss.str();
 
+    // pack_time.akpk
     std::filesystem::path packFilePathObj(packFilePath);
     packFilePathObj /= "pack_" + timeStr + ".akpk";
 
-    // Create directories
     std::filesystem::create_directories(packFilePathObj.parent_path());
-
-    // Open pack file
     std::ofstream packFile(packFilePathObj, std::ios::binary);
     if (!packFile.is_open()) {
         std::cerr << "Failed to open pack file." << std::endl;
@@ -33,15 +31,20 @@ bool PackFile::packFile(const std::string &filePath, const std::string packFileP
             }
 
             // Add filename and size
-            std::string filename = entry.path().filename().string();
+            std::string relativePath = std::filesystem::relative(entry.path(), filePathObj).string();
             std::uint64_t fileSize = std::filesystem::file_size(entry.path());
-            packFile.write(filename.c_str(), filename.size() + 1); //'\0'
+            packFile.write(relativePath.c_str(), relativePath.size() + 1); //'\0'
             packFile.write(reinterpret_cast<const char *>(&fileSize), sizeof(fileSize));
 
             packFile << srcFile.rdbuf();
         }
         // directory
         else if (entry.is_directory()) {
+            std::string dirName = entry.path().filename().string();
+            std::uint64_t dirSize = static_cast<std::uint64_t>(-1);
+            packFile.write(dirName.c_str(), dirName.size() + 1); //'\0'
+            packFile.write(reinterpret_cast<const char *>(&dirSize), sizeof(dirSize));
         }
     }
+    return true;
 }
