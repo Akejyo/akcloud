@@ -33,9 +33,9 @@ private:
     std::ifstream infile; // 文件流
     std::string originFileName;
     huffmanNode *root;
-    //源文件内容
+    // 源文件内容
     std::vector<std::string> lines;
-    //字符数量统计
+    // 字符数量统计
     std::unordered_map<char, int> charCount;
     // code
     std::unordered_map<char, std::string> strCode;

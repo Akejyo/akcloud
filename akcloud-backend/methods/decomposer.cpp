@@ -32,8 +32,8 @@ DeComposer::~DeComposer() {
     }
 }
 void DeComposer::readFile() {
-    //读取文件后缀名和频次行数信息
-    
+    // 读取文件后缀名和频次行数信息
+
     std::getline(infile, postFix);
     std::string strLineCnt;
     std::getline(infile, strLineCnt);
@@ -47,11 +47,11 @@ void DeComposer::readFile() {
 }
 huffmanTreeNode *DeComposer::create_huffmanTree() {
     std::priority_queue<huffmanTreeNode *, std::vector<huffmanTreeNode *>, compare> pq;
-    //创建节点森林
+    // 创建节点森林
     for (std::pair<char, int> p : charCount) {
         pq.push(new huffmanTreeNode(p.second, p.first));
     }
-    //构建
+    // 构建
     while (pq.size() > 1) {
         huffmanTreeNode *cleft = pq.top();
         pq.pop();
@@ -68,25 +68,25 @@ huffmanTreeNode *DeComposer::create_huffmanTree() {
     return root;
 }
 void DeComposer::decompose(std::string outFilename) {
-    outFilename += '.'+postFix;
+    outFilename += '.' + postFix;
     std::ofstream fOut(outFilename);
     huffmanTreeNode *cur = root;
     unsigned char bitcount = 0;
-    //文件大小，单位字节
+    // 文件大小，单位字节
     int fileSize = root->val;
-    //已解压字节数
+    // 已解压字节数
     int compressSize = 0;
     char curch;
     while (infile.get(curch)) {
         bitcount = 0;
         while (bitcount < 8) {
-            //按照哈夫曼树进行遍历
+            // 按照哈夫曼树进行遍历
             if (curch & 0x80) {
                 cur = cur->right;
             } else {
                 cur = cur->left;
             }
-            //遍历到底，代表解压一个字节
+            // 遍历到底，代表解压一个字节
             if (cur->left == nullptr && cur->right == nullptr) {
                 fOut << cur->c;
                 cur = root;
