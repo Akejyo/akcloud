@@ -7,12 +7,12 @@ interface DrawerItemProps {
   index: number
   name: string
   onClick?: () => void
-  isSelected?: boolean
+  selectedIndex: number
 }
 
 const icons: ReactElement[] = [<Folder />, <AvTimer />, <CloudUpload />]
 
-const DrawerItem: React.FC<DrawerItemProps> = ({ index, name, onClick, isSelected }) => {
+const DrawerItem: React.FC<DrawerItemProps> = ({ index, name, onClick, selectedIndex }) => {
   return (
     <Box sx={{ p: 1 }}>
       <Box
@@ -25,7 +25,7 @@ const DrawerItem: React.FC<DrawerItemProps> = ({ index, name, onClick, isSelecte
           '&:hover': {
             backgroundColor: '#455175'
           },
-          backgroundColor: isSelected ? '#2a3f73' : '#1f294a',
+          backgroundColor: selectedIndex == index ? '#2a3f73' : '#1f294a',
           alignItems: 'center'
         }}
         onClick={onClick}

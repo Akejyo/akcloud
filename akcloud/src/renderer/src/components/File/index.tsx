@@ -1,17 +1,33 @@
-import { Box, Card, CardHeader, Menu, MenuItem, Typography } from '@mui/material'
-import { useRef, useState } from 'react'
+import { Box, Checkbox, Menu, MenuItem, Typography } from '@mui/material'
+import { useState } from 'react'
 import MoreHoriz from '@mui/icons-material/MoreHoriz'
 
 import floderImg from '../assets/floder.png'
-interface FileProps {
-  name: string
-  type: string
-  size: number
-  date: string
-  icon: string
+import fileImg from '../assets/file.png'
+import { FileProps } from '@renderer/type'
+
+const formatDate = (timestamp: string) => {
+  //只显示年月日
+  const date = new Date(parseInt(timestamp, 10) * 1000)
+  const year = date.getFullYear()
+  const month = (date.getMonth() + 1).toString().padStart(2, '0')
+  const day = date.getDate().toString().padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
-const File = () => {
+type ExtendedFileProps = FileProps & {
+  showCheckbox: boolean
+  onCheckboxChange: (fileName: string, isChecked: boolean) => void
+}
+
+const File: React.FC<ExtendedFileProps> = ({
+  name,
+  isDirectory,
+  size,
+  lastModified,
+  showCheckbox,
+  onCheckboxChange
+}) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
     setAnchorEl(event.currentTarget)
@@ -19,7 +35,9 @@ const File = () => {
   const handleClose = () => {
     setAnchorEl(null)
   }
-
+  const handleCheckboxChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    onCheckboxChange(name, event.target.checked)
+  }
   return (
     <Box
       sx={{
@@ -34,6 +52,12 @@ const File = () => {
         position: 'relative'
       }}
     >
+      {showCheckbox && (
+        <Checkbox
+          sx={{ position: 'absolute', top: 0, left: 0, zIndex: 1 }}
+          onChange={handleCheckboxChange}
+        />
+      )}
       <Box
         sx={{
           width: '30px',
@@ -54,13 +78,26 @@ const File = () => {
         <MoreHoriz />
       </Box>
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
-        <MenuItem onClick={handleClose}>数据还原</MenuItem>
-        <MenuItem onClick={handleClose}>上传云端</MenuItem>
+        <MenuItem onClick={handleClose}>数据备份</MenuItem>
       </Menu>
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <img src={floderImg} alt="floder" width="100px" />
-        <Typography sx={{ fontSize: 14, mb: -1 }}>dir</Typography>
-        <Typography sx={{ fontSize: 12, color: 'grey' }}>2024/9/7</Typography>
+      <Box>
+        {isDirectory ? (
+          <img src={floderImg} alt="floder" height="100px" />
+        ) : (
+          <img src={fileImg} alt="file" height="100px" />
+        )}
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+            gap: 1
+          }}
+        >
+          <Typography sx={{ fontSize: 14, mb: -1 }}>{name}</Typography>
+          <Typography sx={{ fontSize: 12, color: 'grey' }}>{formatDate(lastModified)}</Typography>
+        </Box>
       </Box>
     </Box>
   )

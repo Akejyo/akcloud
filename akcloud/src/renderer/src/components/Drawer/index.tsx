@@ -10,19 +10,19 @@ const Drawer = ({ selectedIndex, setSelectedIndex }) => {
           index={0}
           name={'文件'}
           onClick={() => setSelectedIndex(0)}
-          isSelected={0 == selectedIndex}
+          selectedIndex={selectedIndex}
         />
         <DrawerItem
           index={1}
           name={'定时备份'}
           onClick={() => setSelectedIndex(1)}
-          isSelected={1 == selectedIndex}
+          selectedIndex={selectedIndex}
         />
         <DrawerItem
           index={2}
           name={'云端'}
           onClick={() => setSelectedIndex(2)}
-          isSelected={2 == selectedIndex}
+          selectedIndex={selectedIndex}
         />
       </Box>
     </>
