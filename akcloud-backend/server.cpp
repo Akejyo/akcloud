@@ -2,6 +2,9 @@
 #include "methods/file_backup_restore.h"
 #include "methods/pack_file.h"
 #include "methods/check_file.h"
+#include "methods/encrypt.h"
+#include "methods/decomposer.h"
+#include "methods/composer.h"
 #include <filesystem>
 #include <vector>
 #include <string>
@@ -24,6 +27,21 @@ void copy_files_to_pack(const std::vector<std::string> &files, const fs::path &b
         fs::path destination = pack_path / file;
         fs::copy(source, destination, fs::copy_options::overwrite_existing);
     }
+}
+std::string removeFileExtension(const std::string &filename) {
+    size_t last_dot = filename.find_last_of(".");
+    if (last_dot == std::string::npos) {
+        return filename; // 没有找到点，返回原始字符串
+    }
+    return filename.substr(0, last_dot);
+}
+std::string addDecrypt(const std::string &filename) {
+    std::string name = removeFileExtension(filename);
+    return name + "_decrypt" + filename.substr(filename.find_last_of("."));
+}
+std::string addDecompress(const std::string &filename) {
+    std::string name = removeFileExtension(filename);
+    return name + "_decompress" + filename.substr(filename.find_last_of("."));
 }
 
 // 获得目录下的文件信息
@@ -192,12 +210,84 @@ int main() {
         std::cout << "Received request for /api/files/pack" << std::endl;
         try {
             auto json = nlohmann::json::parse(req.body);
-            std::string file = json["file"];
+            std::string file = json["files"];
             std::string method = json["method"];
             // 1 哈夫曼,2 LZ77
 
             std::string compress_path = backupBasePath + file;
+            std::string destination_path = removeFileExtension(compress_path);
+            int method_int = std::stoi(method);
+            Composer composer(compress_path, destination_path);
+            switch (method_int) {
+            case 1:
+                composer.startCompose();
+                break;
+            case 2:
+                composer.compress_lz77();
+                break;
+            default:
+                break;
+            }
+        } catch (const std::exception &e) {
+            res.status = 400;
+            res.set_content("{\"error\": \"Invalid request\"}", "application/json");
+        }
+    });
 
+    // 解压文件
+    svr.Post("/files/decompress", [&unpackBasePath, &backupBasePath](const httplib::Request &req, httplib::Response &res) {
+        std::cout << "Received request for /api/files/decompress" << std::endl;
+        try {
+            auto json = nlohmann::json::parse(req.body);
+            std::string file = json["files"];
+
+            std::string compress_path = backupBasePath + file;
+            std::string destination_path = removeFileExtension(addDecompress(compress_path));
+            std::cout << destination_path << std::endl;
+            DeComposer decomposer(compress_path, destination_path);
+            decomposer.decomposeAlgorithmSelector();
+        } catch (const std::exception &e) {
+            res.status = 400;
+            res.set_content("{\"error\": \"Invalid request\"}", "application/json");
+        }
+    });
+
+    // 加密文件
+    svr.Post("/files/encrypt", [&unpackBasePath, &backupBasePath](const httplib::Request &req, httplib::Response &res) {
+        std::cout << "Received request for /api/files/encrypt" << std::endl;
+        try {
+            auto json = nlohmann::json::parse(req.body);
+            std::string file = json["files"];
+            std::string key = json["key"];
+
+            std::string encrypt_path = backupBasePath + file;
+            std::string destination_path = encrypt_path + ".aes";
+            AESEncrypt aesEncrypt;
+            aesEncrypt.encrypt(encrypt_path, destination_path, (unsigned char *)key.c_str());
+        } catch (const std::exception &e) {
+            res.status = 400;
+            res.set_content("{\"error\": \"Invalid request\"}", "application/json");
+        }
+    });
+
+    // 解密文件
+    svr.Post("/files/decrypt", [&unpackBasePath, &backupBasePath](const httplib::Request &req, httplib::Response &res) {
+        std::cout << "Received request for /api/files/decrypt" << std::endl;
+        try {
+            auto json = nlohmann::json::parse(req.body);
+            std::string file = json["files"];
+            std::string key = json["key"];
+
+            std::string encrypt_path = backupBasePath + file;
+            std::string destination_path = addDecrypt(removeFileExtension(encrypt_path));
+            AESEncrypt aesEncrypt;
+            if (aesEncrypt.decrypt(encrypt_path, destination_path, (unsigned char *)key.c_str())) {
+                res.status = 200;
+                res.set_content("{\"message\": \"File decrypted successfully\"}", "application/json");
+            } else {
+                res.status = 400;
+                res.set_content("{\"error\": \"Failed to decrypt file\"}", "application/json");
+            }
         } catch (const std::exception &e) {
             res.status = 400;
             res.set_content("{\"error\": \"Invalid request\"}", "application/json");
