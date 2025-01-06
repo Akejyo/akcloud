@@ -52,6 +52,7 @@ int main() {
     std::string backendBasePath = "akcloud/akcloud-backend/";
     std::string backupBasePath = "backup/";
     std::string packBasePath = "pack/";
+    std::string unpackBasePath = "unpack/";
     // 中间件：为所有响应添加 CORS 头
     svr.set_pre_routing_handler([](const httplib::Request &req, httplib::Response &res) {
         res.set_header("Access-Control-Allow-Origin", "*");
@@ -138,6 +139,63 @@ int main() {
 
             res.status = 200;
             res.set_content("{\"message\": \"Files packed successfully\"}", "application/json");
+        } catch (const std::exception &e) {
+            res.status = 400;
+            res.set_content("{\"error\": \"Invalid request\"}", "application/json");
+        }
+    });
+
+    // 解包文件
+    svr.Post("/files/unpack", [&unpackBasePath, &backupBasePath](const httplib::Request &req, httplib::Response &res) {
+        std::cout << "Received request for /api/files/unpack" << std::endl;
+        try {
+            auto file = req.get_file_value("file");
+            auto address = req.get_file_value("address").content.c_str();
+            std::string address2 = address;
+
+            std::string filePath = unpackBasePath + "/" + file.filename;
+            std::cout << "File path: " << filePath << std::endl;
+            std::cout << "Address: " << address << std::endl;
+
+            if (fs::exists(unpackBasePath)) {
+                for (const auto &entry : fs::directory_iterator(unpackBasePath))
+                    fs::remove_all(entry.path());
+            } else {
+                fs::create_directory(unpackBasePath);
+            }
+            fs::path unpack_path = unpackBasePath;
+            fs::path destination = unpack_path / file.filename;
+
+            std::ofstream ofs(destination, std::ios::binary);
+            ofs.write(file.content.data(), file.content.size());
+            ofs.close();
+            std::cout << "Address: " << address2 << std::endl;
+
+            if (PackFile::unpackFile(filePath, address2)) {
+                res.status = 200;
+                res.set_content("{\"message\": \"Files packed successfully\"}", "application/json");
+            } else {
+                res.status = 400;
+                res.set_content("{\"error\": \"Failed to pack files\"}", "application/json");
+            }
+
+            res.status = 200;
+            res.set_content("{\"message\": \"File uploaded successfully\"}", "application/json");
+        } catch (const std::exception &e) {
+            res.status = 400;
+            res.set_content("{\"error\": \"Invalid request\"}", "application/json");
+        }
+    });
+
+    // 压缩文件
+    svr.Post("/files/compress", [&unpackBasePath, &backupBasePath](const httplib::Request &req, httplib::Response &res) {
+        std::cout << "Received request for /api/files/pack" << std::endl;
+        try {
+            auto json = nlohmann::json::parse(req.body);
+            std::string file = json["file"];
+
+            std::string compress_path = backupBasePath + file;
+
         } catch (const std::exception &e) {
             res.status = 400;
             res.set_content("{\"error\": \"Invalid request\"}", "application/json");

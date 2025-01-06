@@ -1,6 +1,6 @@
 #include "pack_file.h"
 #include "check_file.h"
-
+namespace fs = std::filesystem;
 bool PackFile::packFile(const std::string &filePath, std::string packFilePath) {
     auto nowTime = std::chrono::system_clock::now();
     auto nowTime_t = std::chrono::system_clock::to_time_t(nowTime);
@@ -100,6 +100,19 @@ bool PackFile::packFile(const std::string &filePath, std::string packFilePath) {
     return true;
 }
 
+void create_unpack_directory(const fs::path &unpackFilePathObj) {
+    try {
+        if (fs::create_directories(unpackFilePathObj)) {
+            std::cout << "Directory created successfully: " << unpackFilePathObj << std::endl;
+        } else {
+            std::cerr << "Failed to create directory: " << unpackFilePathObj << std::endl;
+        }
+    } catch (const fs::filesystem_error &e) {
+        std::cerr << "Filesystem error: " << e.what() << std::endl;
+    } catch (const std::exception &e) {
+        std::cerr << "General error: " << e.what() << std::endl;
+    }
+}
 // Unpack file
 bool PackFile::unpackFile(const std::string &packFilePath, const std::string &unpackFilePath) {
     std::filesystem::path packFilePathObj(packFilePath);
@@ -125,8 +138,8 @@ bool PackFile::unpackFile(const std::string &packFilePath, const std::string &un
     // 去掉CRC长度
     std::streamoff fileSize = std::filesystem::file_size(packFilePathObj) - sizeof(std::uint32_t);
     packFile.seekg(0, std::ios::beg);
+    create_unpack_directory(unpackFilePathObj);
 
-    std::filesystem::create_directories(unpackFilePathObj);
     while (packFile.tellg() < fileSize) {
         char identifier;
         packFile.read(&identifier, sizeof(identifier));
