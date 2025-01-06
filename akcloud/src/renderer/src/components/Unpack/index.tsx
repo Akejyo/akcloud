@@ -1,8 +1,10 @@
 import { Button } from '@mui/material'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useRef, useState } from 'react'
 import Address from '../Address'
-
-const Unpack = () => {
+const MAX_RETRIES = 10
+const RETRY_DELAY = 300
+const TIMEOUT = 300
+const Unpack = ({ setRefresh }) => {
   const [addressDialogOpen, setAddressDialogOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [file, setFile] = useState<File>()
@@ -26,20 +28,39 @@ const Unpack = () => {
       formData.append('file', file)
       formData.append('address', address)
       console.log('address:', formData.get('address'))
-      try {
-        const response = await fetch('/api/files/unpack', {
-          method: 'POST',
-          body: formData
-        })
-        if (!response.ok) {
-          throw new Error('File unpack failed')
-        } else {
-          console.log('File unpack successfully')
-        }
-      } catch (e) {
-        console.log('Error unpacking file:', e)
-      }
+      let attempt = 0
+      let success = false
 
+      while (attempt < MAX_RETRIES && !success) {
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), TIMEOUT)
+
+        try {
+          const response = await fetch('/api/files/unpack', {
+            method: 'POST',
+            body: formData,
+            signal: controller.signal
+          })
+          clearTimeout(timeoutId)
+          if (!response.ok) {
+            throw new Error('File unpack failed')
+          } else {
+            console.log('File unpack successfully')
+            success = true
+            setRefresh((prev) => !prev)
+          }
+        } catch (e) {
+          attempt++
+          clearTimeout(timeoutId)
+          console.log('Error unpacking file:', e)
+          if (attempt < MAX_RETRIES) {
+            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY)) // 等待一段时间后重试
+          } else {
+            console.log('Max retries reached. File upload failed.')
+          }
+        }
+      }
+      setRefresh((prev) => !prev)
       setAddressDialogOpen(false)
     }
   }

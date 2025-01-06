@@ -2,8 +2,10 @@ import { Button, Menu, MenuItem } from '@mui/material'
 import Add from '@mui/icons-material/Add'
 import { useState } from 'react'
 import React, { useRef } from 'react'
-
-const AddFile = () => {
+const MAX_RETRIES = 10
+const RETRY_DELAY = 300
+const TIMEOUT = 300
+const Unpack = ({ setRefresh }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const floderInputRef = useRef<HTMLInputElement>(null)
@@ -32,18 +34,38 @@ const AddFile = () => {
         const formData = new FormData()
         formData.append('file', files[i])
         formData.append('relativePath', files[i].webkitRelativePath)
-        try {
-          const response = await fetch('/api/files/backup', {
-            method: 'POST',
-            body: formData
-          })
-          if (!response.ok) {
-            throw new Error('File upload failed')
-          } else {
-            console.log('File uploaded successfully')
+
+        let attempt = 0
+        let success = false
+
+        while (attempt < MAX_RETRIES && !success) {
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), TIMEOUT)
+
+          try {
+            const response = await fetch('/api/files/backup', {
+              method: 'POST',
+              body: formData,
+              signal: controller.signal
+            })
+            clearTimeout(timeoutId)
+            if (!response.ok) {
+              throw new Error('File upload failed')
+            } else {
+              console.log('File uploaded successfully')
+              success = true
+              setRefresh((prev) => !prev)
+            }
+          } catch (e) {
+            attempt++
+            clearTimeout(timeoutId)
+            console.log(`Error uploading file (attempt ${attempt}):`, e)
+            if (attempt < MAX_RETRIES) {
+              await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY)) // 等待一段时间后重试
+            } else {
+              console.log('Max retries reached. File upload failed.')
+            }
           }
-        } catch (e) {
-          console.log('Error uploading file:', e)
         }
       }
     }
@@ -87,4 +109,4 @@ const AddFile = () => {
     </>
   )
 }
-export default AddFile
+export default Unpack
