@@ -23,7 +23,7 @@ int main() {
     // }
 
     // 解包文件
-    if (PackFile::unpackFile(backupFile + "/backup_test.akpk", "./unpackFiles")) {
+    if (PackFile::unpackFile(backupFile + "/backup_test.akpk", "unpackFiles")) {
         std::cout << "File unpacked successfully." << std::endl;
     } else {
         std::cout << "File unpack failed." << std::endl;

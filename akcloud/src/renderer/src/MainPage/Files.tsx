@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { FileProps } from '@renderer/type'
 import { Add } from '@mui/icons-material'
 import Address from '@renderer/components/Address'
+import Unpack from '@renderer/components/Unpack'
 
 const Files = () => {
   const [files, setFiles] = useState<FileProps[]>([])
@@ -108,17 +109,7 @@ const Files = () => {
         >
           多选
         </Button>
-        <Button
-          variant="contained"
-          size="small"
-          sx={{
-            padding: '0px 5px !important',
-            height: '40px !important',
-            mr: 2
-          }}
-        >
-          解包
-        </Button>
+        <Unpack />
         <AddFile />
       </Box>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>

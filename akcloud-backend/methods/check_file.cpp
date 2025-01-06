@@ -63,6 +63,6 @@ bool CheckFile::checkFile(const std::string &filePath) {
         std::cerr << "CRC check failed." << std::endl;
         return false;
     }
-
+    std::cout << "CRC check passed." << std::endl;
     return true;
 }
