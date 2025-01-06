@@ -193,6 +193,8 @@ int main() {
         try {
             auto json = nlohmann::json::parse(req.body);
             std::string file = json["file"];
+            std::string method = json["method"];
+            // 1 哈夫曼,2 LZ77
 
             std::string compress_path = backupBasePath + file;
 

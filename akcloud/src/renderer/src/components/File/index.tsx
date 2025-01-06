@@ -38,7 +38,7 @@ const File: React.FC<ExtendedFileProps> = ({
   const handleCheckboxChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onCheckboxChange(name, event.target.checked)
   }
-  const handleCompress = async () => {
+  const handleCompress = async (method: number) => {
     console.log('压缩')
     try {
       const response = await fetch('/api/files/compress', {
@@ -46,7 +46,7 @@ const File: React.FC<ExtendedFileProps> = ({
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ files: name })
+        body: JSON.stringify({ files: name, method: method })
       })
       if (!response.ok) {
         throw new Error('Network response was not ok')
@@ -98,7 +98,8 @@ const File: React.FC<ExtendedFileProps> = ({
         <MoreHoriz />
       </Box>
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
-        <MenuItem onClick={handleCompress}>压缩</MenuItem>
+        <MenuItem onClick={() => handleCompress(1)}>哈夫曼压缩</MenuItem>
+        <MenuItem onClick={() => handleCompress(2)}>lz77压缩</MenuItem>
       </Menu>
       <Box>
         {isDirectory ? (
