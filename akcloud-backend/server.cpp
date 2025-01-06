@@ -2,6 +2,9 @@
 #include "methods/file_backup_restore.h"
 #include "methods/pack_file.h"
 #include "methods/check_file.h"
+#include "methods/encrypt.h"
+#include "methods/decomposer.h"
+#include "methods/composer.h"
 #include <filesystem>
 #include <vector>
 #include <string>
@@ -192,19 +195,30 @@ int main() {
         std::cout << "Received request for /api/files/pack" << std::endl;
         try {
             auto json = nlohmann::json::parse(req.body);
-            std::string file = json["file"];
+            std::string file = json["files"];
             std::string method = json["method"];
             // 1 哈夫曼,2 LZ77
 
             std::string compress_path = backupBasePath + file;
-
+            int method_int = std::stoi(method);
+            Composer composer(compress_path, compress_path);
+            switch (method_int) {
+            case 1:
+                composer.startCompose();
+                break;
+            case 2:
+                composer.compress_lz77();
+                break;
+            default:
+                break;
+            }
         } catch (const std::exception &e) {
             res.status = 400;
             res.set_content("{\"error\": \"Invalid request\"}", "application/json");
         }
     });
 
-    std::cout << "Server is running on http://localhost:3001" << std::endl;
+        std::cout << "Server is running on http://localhost:3001" << std::endl;
     if (!svr.listen("localhost", 3001)) {
         std::cerr << "Error starting server!" << std::endl;
         return 1;
